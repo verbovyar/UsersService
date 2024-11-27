@@ -2,16 +2,15 @@ package app
 
 import (
 	"MiddleApp/config"
-	"MiddleApp/internal/domain"
 	"MiddleApp/internal/handlers"
-	"MiddleApp/internal/repositories/db/memory"
+	db "MiddleApp/internal/repositories/db/postgres"
+	"MiddleApp/internal/repositories/interfaces"
+	"MiddleApp/pkg/postgres"
 	"fmt"
 	"net/http"
 )
 
-func RunHttp(config *config.Config) {
-	data := make(map[uint32]*domain.User)
-	repo := memory.New(data)
+func RunHttp(config *config.Config, repo interfaces.Repository) {
 	h := handlers.New(repo)
 
 	http.Handle("/", h.Router)
@@ -22,4 +21,12 @@ func RunHttp(config *config.Config) {
 	} else {
 		fmt.Println("Service is listening...")
 	}
+}
+
+func RunRepo(config *config.Config) *db.UsersRepository {
+	pool := postgres.New(config.ConnectingString)
+
+	repo := db.New(pool.Pool)
+
+	return repo
 }

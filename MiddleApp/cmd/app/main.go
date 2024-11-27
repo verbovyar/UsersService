@@ -11,5 +11,6 @@ func main() {
 		println(err.Error())
 	}
 
-	app.RunHttp(&conf)
+	repo := app.RunRepo(&conf)
+	app.RunHttp(&conf, repo)
 }

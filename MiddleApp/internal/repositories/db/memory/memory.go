@@ -18,7 +18,7 @@ func New(data map[uint32]*domain.User) *Memory {
 	return &Memory{Data: data}
 }
 
-func (m *Memory) Create(name, surname string, age uint32) error {
+func (m *Memory) Create(name, surname string, age uint32) (error, uint32) {
 	user := &domain.User{
 		Name:    name,
 		Surname: surname,
@@ -30,7 +30,7 @@ func (m *Memory) Create(name, surname string, age uint32) error {
 
 	LastId++
 
-	return nil
+	return nil, user.Id
 }
 
 func (m *Memory) Read() []*domain.User {
@@ -49,20 +49,20 @@ func (m *Memory) Read() []*domain.User {
 	return list
 }
 
-func (m *Memory) Update(id uint32, name, surname string, age uint32) error {
+func (m *Memory) Update(id uint32, name, surname string, age uint32) (error, uint32) {
 	m.Data[id].Name = name
 	m.Data[id].Surname = surname
 	m.Data[id].Age = age
 
-	return nil
+	return nil, id
 }
 
-func (m *Memory) Delete(id uint32) error {
+func (m *Memory) Delete(id uint32) (error, uint32) {
 	if _, ok := m.Data[id]; ok {
 		delete(m.Data, id)
 	} else {
 		log.Println("Delete user error")
 	}
 
-	return nil
+	return nil, id
 }

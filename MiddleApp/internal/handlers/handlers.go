@@ -62,7 +62,7 @@ func (h *Handlers) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = h.Data.Create(user.Name, user.Surname, user.Age)
+	err, _ = h.Data.Create(user.Name, user.Surname, user.Age)
 	if err != nil {
 		log.Println("Data create function error")
 		return
@@ -105,7 +105,7 @@ func (h *Handlers) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = h.Data.Update(user.Id, user.Name, user.Surname, user.Age)
+	err, _ = h.Data.Update(user.Id, user.Name, user.Surname, user.Age)
 	if err != nil {
 		log.Println("Data update function error")
 		return
@@ -115,7 +115,7 @@ func (h *Handlers) Update(w http.ResponseWriter, r *http.Request) {
 }
 
 type deleteStruct struct {
-	id uint32
+	Id uint32 `json:"id"`
 }
 
 func (h *Handlers) Delete(w http.ResponseWriter, r *http.Request) {
@@ -137,11 +137,12 @@ func (h *Handlers) Delete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = h.Data.Delete(delStr.id)
+	err, _ = h.Data.Delete(delStr.Id)
 	if err != nil {
 		log.Println("Data deletes function error")
 		return
 	}
+	log.Println(delStr.Id)
 
 	w.Write([]byte("User was deleted"))
 }

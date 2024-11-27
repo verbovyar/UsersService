@@ -6,7 +6,8 @@ import (
 )
 
 type Config struct {
-	Port string `mapstructure:"PORT"`
+	Port             string `mapstructure:"PORT"`
+	ConnectingString string `mapstructure:"CONNECTING_STRING"`
 }
 
 func LoadConfig(path string) (config Config, err error) {
