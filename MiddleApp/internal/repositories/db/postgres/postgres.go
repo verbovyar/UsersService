@@ -6,19 +6,34 @@ import (
 	"context"
 	"errors"
 	"log"
+	"sync"
 )
+
+const PoolSize = 5
 
 type UsersRepository struct {
 	Pool interfaces.PgxPoolIface
+
+	mutex       sync.RWMutex
+	poolChannel chan struct{}
 }
 
 func New(pool interfaces.PgxPoolIface) *UsersRepository {
 	return &UsersRepository{
-		Pool: pool,
+		Pool:        pool,
+		mutex:       sync.RWMutex{},
+		poolChannel: make(chan struct{}, PoolSize),
 	}
 }
 
 func (r *UsersRepository) Create(name, surname string, age uint32) (error, uint32) {
+	r.poolChannel <- struct{}{}
+	r.mutex.Lock()
+	defer func() {
+		r.mutex.Unlock()
+		<-r.poolChannel
+	}()
+
 	ctx := context.Background()
 
 	user := domain.New(name, surname, age)
@@ -44,6 +59,13 @@ func (r *UsersRepository) Create(name, surname string, age uint32) (error, uint3
 }
 
 func (r *UsersRepository) Read() []*domain.User {
+	r.poolChannel <- struct{}{}
+	r.mutex.Lock()
+	defer func() {
+		r.mutex.Unlock()
+		<-r.poolChannel
+	}()
+
 	ctx := context.Background()
 
 	query := `SELECT id, name, surname, age FROM Users`
@@ -73,6 +95,13 @@ func (r *UsersRepository) Read() []*domain.User {
 }
 
 func (r *UsersRepository) Update(id uint32, name, surname string, age uint32) (error, uint32) {
+	r.mutex.Lock()
+	r.poolChannel <- struct{}{}
+	defer func() {
+		r.mutex.Unlock()
+		<-r.poolChannel
+	}()
+
 	ctx := context.Background()
 
 	query := `SELECT id FROM Users WHERE id = $1`
@@ -94,6 +123,13 @@ func (r *UsersRepository) Update(id uint32, name, surname string, age uint32) (e
 }
 
 func (r *UsersRepository) Delete(id uint32) (error, uint32) {
+	r.mutex.Lock()
+	r.poolChannel <- struct{}{}
+	defer func() {
+		r.mutex.Unlock()
+		<-r.poolChannel
+	}()
+
 	ctx := context.Background()
 
 	query := `DELETE FROM Users WHERE Id = $1`
