@@ -4,16 +4,15 @@ import (
 	"MiddleApp/internal/domain"
 	"MiddleApp/internal/repositories/interfaces"
 	"context"
-	"github.com/jackc/pgx/v4/pgxpool"
+	"errors"
 	"log"
 )
 
 type UsersRepository struct {
-	Pool  *pgxpool.Pool
-	iFace interfaces.Repository
+	Pool interfaces.PgxPoolIface
 }
 
-func New(pool *pgxpool.Pool) *UsersRepository {
+func New(pool interfaces.PgxPoolIface) *UsersRepository {
 	return &UsersRepository{
 		Pool: pool,
 	}
@@ -76,8 +75,15 @@ func (r *UsersRepository) Read() []*domain.User {
 func (r *UsersRepository) Update(id uint32, name, surname string, age uint32) (error, uint32) {
 	ctx := context.Background()
 
-	query := `UPDATE Users SET name = $1, surname = $2, age = $3 WHERE id = $4`
-	_, err := r.Pool.Query(ctx, query, name, surname, age, id)
+	query := `SELECT id FROM Users WHERE id = $1`
+	rows, err := r.Pool.Query(ctx, query, id)
+	if rows == nil {
+		doesNotExistErr := errors.New("user does not exist")
+		return doesNotExistErr, 0
+	}
+
+	query = `UPDATE Users SET name = $1, surname = $2, age = $3 WHERE id = $4`
+	_, err = r.Pool.Query(ctx, query, name, surname, age, id)
 	if err != nil {
 		log.Fatalf("Didnt update rows value: %s", err.Error())
 

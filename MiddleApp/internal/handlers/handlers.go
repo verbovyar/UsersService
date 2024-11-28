@@ -38,8 +38,6 @@ func New(repo interfaces.Repository) *Handlers {
 		}
 	})
 
-	// TODO: Узнать про кажлый http метод
-
 	return h
 }
 
@@ -139,10 +137,11 @@ func (h *Handlers) Delete(w http.ResponseWriter, r *http.Request) {
 
 	err, _ = h.Data.Delete(delStr.Id)
 	if err != nil {
-		log.Println("Data deletes function error")
+		delError := err.Error()
+		w.Write([]byte("Data deletes function error: " + delError))
+		log.Printf("Data deletes function error: %s", err.Error())
 		return
 	}
-	log.Println(delStr.Id)
 
 	w.Write([]byte("User was deleted"))
 }

@@ -13,13 +13,13 @@ import (
 func RunHttp(config *config.Config, repo interfaces.Repository) {
 	h := handlers.New(repo)
 
+	fmt.Printf("Service is listening on port: %s", config.Port)
+
 	http.Handle("/", h.Router)
 
 	err := http.ListenAndServe(config.Port, nil)
 	if err != nil {
 		panic(err)
-	} else {
-		fmt.Println("Service is listening...")
 	}
 }
 

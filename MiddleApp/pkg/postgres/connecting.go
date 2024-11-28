@@ -20,6 +20,7 @@ func New(connectionString string) *Postgres {
 
 func newPool(ctx context.Context, maxAttempts int, connectionString string) (connectionPool *pgxpool.Pool) {
 	var err error
+
 	err = doWithTries(func() error {
 		ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 		defer cancel()
