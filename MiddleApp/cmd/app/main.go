@@ -12,5 +12,6 @@ func main() {
 	}
 
 	repo := app.RunRepo(&conf)
-	app.RunHttp(&conf, repo)
+	go app.RunHttp(&conf, repo)
+	app.RunGrpc(&conf, repo)
 }
