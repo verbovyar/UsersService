@@ -3,14 +3,15 @@ package app
 import (
 	"MiddleApp/api/api/ServiceApiPb"
 	"MiddleApp/config"
-	"MiddleApp/grpcHandlers"
+	"MiddleApp/internal/grpcHandlers"
 	"MiddleApp/internal/handlers"
+	"MiddleApp/internal/kafka"
+	"MiddleApp/internal/kafkaHandlers"
 	db "MiddleApp/internal/repositories/db/postgres"
 	"MiddleApp/internal/repositories/interfaces"
 	"MiddleApp/pkg/postgres"
 	"fmt"
 	"google.golang.org/grpc"
-	"log"
 	"net"
 	"net/http"
 )
@@ -18,7 +19,7 @@ import (
 func RunHttp(config *config.Config, repo interfaces.Repository) {
 	h := handlers.New(repo)
 
-	fmt.Printf("Service is listening on port: %s", config.Port)
+	fmt.Println("Service is listening on port: 9000")
 
 	http.Handle("/", h.Router)
 
@@ -38,9 +39,9 @@ func RunRepo(config *config.Config) *db.UsersRepository {
 
 func RunGrpc(config *config.Config, repo interfaces.Repository) {
 	grpcServer := grpc.NewServer()
-	listener, err := net.Listen("tcp", ":9091")
+	listener, err := net.Listen("tcp", config.GrpcPort)
 	if err != nil {
-		log.Printf("Listener error: %s", err.Error())
+		fmt.Printf("Listener error: %s", err.Error())
 	}
 
 	h := grpcHandlers.New(repo)
@@ -49,4 +50,14 @@ func RunGrpc(config *config.Config, repo interfaces.Repository) {
 	if err != nil {
 		fmt.Printf("serve error%v\n", err)
 	}
+
+	fmt.Println("GRPC service is listening on port: 9091")
+}
+
+func RunKafka(repo interfaces.Repository) {
+	producer := kafka.NewProducer()
+	consumerGroup := kafka.NewConsumerGroup()
+
+	create := kafkaHandlers.NewCreateHandler(producer, consumerGroup, repo)
+	go kafkaHandlers.CreateClaim(create)
 }

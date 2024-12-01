@@ -1,0 +1,59 @@
+syntax = "proto3";
+
+option go_package = "api/ServiceApiPb";
+
+service UsersService {
+  rpc Create(createRequest) returns (createResponse) {
+  }
+
+  rpc Read(readRequest) returns (readResponse) {
+  }
+
+  rpc Update(updateRequest) returns (updateResponse) {
+  }
+
+  rpc Delete(deleteRequest) returns (deleteResponse) {
+  }
+}
+
+//----------Create msg
+message createRequest {
+  string name    = 1;
+  string surname = 2;
+  uint32 age     = 3;
+}
+message createResponse {
+  uint32 id = 1;
+}
+//----------Read msg
+message readRequest {
+}
+message readResponse {
+  repeated User users = 1;
+
+  message User {
+    uint32 id      = 1;
+    string name    = 2;
+    string surname = 3;
+    uint32 age     = 4;
+  }
+}
+//----------Update msg
+message updateRequest {
+  uint32 id      = 1;
+  string name    = 2;
+  string surname = 3;
+  uint32 age     = 4;
+}
+message updateResponse {
+  uint32 id = 1;
+}
+//----------Delete msg
+message deleteRequest {
+  uint32 id = 1;
+}
+message deleteResponse {
+  uint32 id = 1;
+}
+
+//protoc --go_out=. --go-grpc_out=. service.proto
