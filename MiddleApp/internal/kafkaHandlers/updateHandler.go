@@ -9,58 +9,59 @@ import (
 	"time"
 )
 
-type CreateHandler struct {
+type UpdateHandler struct {
 	producer      sarama.SyncProducer
 	consumerGroup sarama.ConsumerGroup
 	data          interfaces.Repository
 }
 
-func NewCreateHandler(producer sarama.SyncProducer, consumerGroup sarama.ConsumerGroup, data interfaces.Repository) *CreateHandler {
-	return &CreateHandler{
+func NewUpdateHandler(producer sarama.SyncProducer, consumerGroup sarama.ConsumerGroup, data interfaces.Repository) *UpdateHandler {
+	return &UpdateHandler{
 		producer:      producer,
 		consumerGroup: consumerGroup,
 		data:          data,
 	}
 }
 
-type createRequest struct {
+type updateRequest struct {
+	Id      uint32 `json:"id"`
 	Name    string `json:"name"`
 	Surname string `json:"surname"`
 	Age     uint32 `json:"age"`
 }
 
-type createResponse struct {
+type updateResponse struct {
 	Error error  `json:"error"`
 	Id    uint32 `json:"id"`
 }
 
-func (h *CreateHandler) Setup(session sarama.ConsumerGroupSession) error {
+func (h *UpdateHandler) Setup(session sarama.ConsumerGroupSession) error {
 	return nil
 }
 
-func (h *CreateHandler) Cleanup(session sarama.ConsumerGroupSession) error {
+func (h *UpdateHandler) Cleanup(session sarama.ConsumerGroupSession) error {
 	return nil
 }
 
-func (h *CreateHandler) ConsumeClaim(session sarama.ConsumerGroupSession, claim sarama.ConsumerGroupClaim) error {
+func (h *UpdateHandler) ConsumeClaim(session sarama.ConsumerGroupSession, claim sarama.ConsumerGroupClaim) error {
 	for msg := range claim.Messages() {
-		var request createRequest
+		var request updateRequest
 		err := json.Unmarshal(msg.Value, &request)
 		if err != nil {
 			log.Printf("income data %v: %v", string(msg.Value), err)
 			continue
 		}
 
-		err, id := h.data.Create(request.Name, request.Surname, request.Age)
+		err, id := h.data.Update(request.Id, request.Name, request.Surname, request.Age)
 
-		createResp := createResponse{
+		updateResp := updateResponse{
 			Id:    id,
 			Error: err,
 		}
-		response, _ := json.Marshal(&createResp)
+		response, _ := json.Marshal(&updateResp)
 
 		producerMsg := &sarama.ProducerMessage{
-			Topic:     "CreateResponse",
+			Topic:     "UpdateResponse",
 			Partition: -1,
 			Value:     sarama.ByteEncoder(response),
 		}
@@ -72,9 +73,9 @@ func (h *CreateHandler) ConsumeClaim(session sarama.ConsumerGroupSession, claim 
 	return nil
 }
 
-func CreateClaim(createHandler *CreateHandler) {
+func UpdateClaim(updateHandler *UpdateHandler) {
 	for {
-		if err := createHandler.consumerGroup.Consume(context.Background(), []string{"CreateRequest"}, createHandler); err != nil {
+		if err := updateHandler.consumerGroup.Consume(context.Background(), []string{"UpdateRequest"}, updateHandler); err != nil {
 			log.Printf("on consume: %v", err)
 			time.Sleep(time.Second * 10)
 		}

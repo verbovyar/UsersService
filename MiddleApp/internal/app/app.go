@@ -58,6 +58,12 @@ func RunKafka(repo interfaces.Repository) {
 	producer := kafka.NewProducer()
 	consumerGroup := kafka.NewConsumerGroup()
 
-	create := kafkaHandlers.NewCreateHandler(producer, consumerGroup, repo)
-	go kafkaHandlers.CreateClaim(create)
+	createHandler := kafkaHandlers.NewCreateHandler(producer, consumerGroup, repo)
+	go kafkaHandlers.CreateClaim(createHandler)
+
+	updateHandler := kafkaHandlers.NewUpdateHandler(producer, consumerGroup, repo)
+	go kafkaHandlers.UpdateClaim(updateHandler)
+
+	deleteHandler := kafkaHandlers.NewDeleteHandler(producer, consumerGroup, repo)
+	go kafkaHandlers.DeleteClaim(deleteHandler)
 }

@@ -115,14 +115,100 @@ func (h *Handlers) Read(w http.ResponseWriter, r *http.Request) {
 
 // Update ------------------------
 func (h *Handlers) Update(w http.ResponseWriter, r *http.Request) {
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 
+	if string(body) == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	var user domain.User
+	if err = json.Unmarshal(body, &user); err != nil {
+		return
+	}
+
+	if err = utils.UpdateValidation(user); err != nil {
+		w.Write([]byte("Неверные данные" + err.Error()))
+		return
+	}
+
+	msg := &sarama.ProducerMessage{
+		Topic:     "UpdateRequest",
+		Partition: -1,
+		Value:     sarama.ByteEncoder(body),
+	}
+	_, _, err = h.Producer.SendMessage(msg)
+	if err != nil {
+		error.Error(err)
+	}
+
+	claim, err := h.Consumer.ConsumePartition("UpdateResponse", 0, sarama.OffsetOldest)
+	if err != nil {
+		error.Error(err)
+	}
+
+	select {
+	case err = <-claim.Errors():
+		log.Println(err)
+	default:
+	}
+
+	w.Write([]byte("Юзер успешно обновлен"))
 }
 
 // Delete ------------------------
 type deleteRequest struct {
-	Id uint `json:"id"`
+	Id uint32 `json:"id"`
 }
 
 func (h *Handlers) Delete(w http.ResponseWriter, r *http.Request) {
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 
+	if string(body) == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	var delStr deleteRequest
+	err = json.Unmarshal(body, &delStr)
+	if err != nil {
+		log.Println("Unmarshal error")
+		return
+	}
+
+	if err = utils.DeleteValidation(delStr.Id); err != nil {
+		w.Write([]byte("Неверные данные" + err.Error()))
+		return
+	}
+
+	msg := &sarama.ProducerMessage{
+		Topic:     "DeleteRequest",
+		Partition: -1,
+		Value:     sarama.ByteEncoder(body),
+	}
+	_, _, err = h.Producer.SendMessage(msg)
+	if err != nil {
+		error.Error(err)
+	}
+
+	claim, err := h.Consumer.ConsumePartition("DeleteResponse", 0, sarama.OffsetOldest)
+	if err != nil {
+		error.Error(err)
+	}
+
+	select {
+	case err = <-claim.Errors():
+		log.Println(err)
+	default:
+	}
+
+	w.Write([]byte("Пользователь удален"))
 }
